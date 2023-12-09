@@ -85,7 +85,7 @@ void addClientModeHooks()
     ((ATrDevice_NovaColt_MKD*)(ATrDevice_NovaColt_MKD::StaticClass()->Default))->m_bAllowHoldDownFire = true;
 
     // Disabled due to bugs
-    //fixPingDependencies();
+    fixPingDependencies();
 
     Hooks::addUScript(&TrDevice_SniperRifle_PlayScopeRechargeSound, "Function TribesGame.TrDevice_SniperRifle.PlayScopeRechargeSound");
     Hooks::addUScript(&TrDevice_SniperRifle_StopScopeRechargeSound, "Function TribesGame.TrDevice_SniperRifle.StopScopeRechargeSound");
@@ -278,17 +278,35 @@ void onDLLProcessDetach()
     Logger::cleanup();
 }
 
+DWORD WINAPI DirectXInit(__in  LPVOID lpParameter);
+
+void c_imgui_halt(void);
+
+void c_imgui_unhook(void)
+{
+    c_imgui_halt();
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  reason, LPVOID lpReserved)
 {
     switch (reason)
     {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hModule);
-        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)onDLLProcessAttach, NULL, 0, NULL);
+
+        // Create a thread for DirectXInit
+        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)DirectXInit, hModule, 0, NULL);
+
+        // Call onDLLProcessAttach
+        onDLLProcessAttach();
         break;
 
     case DLL_PROCESS_DETACH:
-        onDLLProcessDetach();
+        
+        if (!lpReserved)
+            onDLLProcessDetach();
+            if (MH_Uninitialize() != MH_OK) { return 1; }
+            c_imgui_unhook();
         break;
     }
     return TRUE;

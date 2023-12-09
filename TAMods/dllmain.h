@@ -12,3 +12,5 @@
 #include "Mods.h"
 #include "Lua.h"
 #include "Stats.h"
+#include <Windows.h>
+#include "min_hook/include/MinHook.h"
